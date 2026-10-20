@@ -1,4 +1,4 @@
-package com.example.TaskManagerApplication.dto;
+package com.example.TaskManagerApplication.dto.taskDto;
 
 import com.example.TaskManagerApplication.entity.Priority;
 import com.example.TaskManagerApplication.entity.TaskStatus;
