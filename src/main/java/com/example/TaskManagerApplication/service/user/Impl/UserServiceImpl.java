@@ -12,6 +12,8 @@ import com.example.TaskManagerApplication.repository.UserRepository;
 import com.example.TaskManagerApplication.security.CustomUserDetails;
 import com.example.TaskManagerApplication.security.JwtService;
 import com.example.TaskManagerApplication.service.user.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -57,6 +61,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(userRegistrationRequestDto.getPassword()));
 
         User saved = userRepository.save(user);
+        logger.info("New user registered: {}", saved.getEmail());
 
         UserRegistrationResponseDto dto = new UserRegistrationResponseDto();
         dto.setName(saved.getName());
@@ -90,6 +95,7 @@ public class UserServiceImpl implements UserService {
 
         String jwtToken = jwtService.generateToken(userDetails);
         // 3. Build response
+        logger.info("Successful login for user: {}", userDetails.getUsername());
         return new LoginResponseDto(
                 "Login successful",
 
