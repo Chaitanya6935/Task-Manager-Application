@@ -2,10 +2,12 @@ package com.example.TaskManagerApplication.controller;
 
 import com.example.TaskManagerApplication.dto.taskDto.TaskRequestDto;
 import com.example.TaskManagerApplication.dto.taskDto.TaskResponseDto;
+import com.example.TaskManagerApplication.dto.taskDto.TaskStatusUpdateDto;
 import com.example.TaskManagerApplication.entity.Priority;
 import com.example.TaskManagerApplication.entity.TaskStatus;
 import com.example.TaskManagerApplication.security.CustomUserDetails;
 import com.example.TaskManagerApplication.service.Task.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +32,7 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<TaskResponseDto> createTask(@RequestBody TaskRequestDto requestDto, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<TaskResponseDto> createTask( @Valid @RequestBody TaskRequestDto requestDto, @AuthenticationPrincipal CustomUserDetails userDetails) {
         TaskResponseDto response = taskService.createTask(requestDto,userDetails.getUserId());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -63,21 +65,51 @@ public class TaskController {
         return ResponseEntity.ok(dtos);
     }
 
-    @GetMapping("/srearch")
-    public ResponseEntity<List<TaskResponseDto>> search( String title,@AuthenticationPrincipal CustomUserDetails userDetails){
-        List<TaskResponseDto> dtos =  taskService.searchTaskByTitle(title,userDetails.getUserId());
+    @GetMapping("/search")
+    public ResponseEntity<List<TaskResponseDto>> search(
+            @RequestParam("title") String title,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<TaskResponseDto> dtos =
+                taskService.searchTaskByTitle(title, userDetails.getUserId());
+
         return ResponseEntity.ok(dtos);
     }
-
     @PutMapping("/update/{id}")
-    public ResponseEntity<TaskResponseDto> update(@PathVariable Long id ,TaskRequestDto taskRequestDto,@AuthenticationPrincipal CustomUserDetails userDetails){
-        TaskResponseDto dto = taskService.updateTask(id,taskRequestDto,userDetails.getUserId());
-        return new ResponseEntity<>(dto,HttpStatus.CREATED);
+    public ResponseEntity<TaskResponseDto> update(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskRequestDto taskRequestDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        TaskResponseDto dto = taskService.updateTask(
+                id,
+                taskRequestDto,
+                userDetails.getUserId()
+        );
+
+        return ResponseEntity.ok(dto);
     }
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void>  delete(@PathVariable Long id,@AuthenticationPrincipal CustomUserDetails userDetails){
          taskService.DeleteById(id,userDetails.getUserId());
          return ResponseEntity.noContent().build();
     }
+
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<TaskResponseDto> updateTaskStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskStatusUpdateDto requestDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        TaskResponseDto response = taskService.updateTaskStatus(
+                id,
+                requestDto.getStatus(),
+                userDetails.getUserId()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }

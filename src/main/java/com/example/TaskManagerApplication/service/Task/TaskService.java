@@ -19,4 +19,5 @@ public interface TaskService {
     TaskResponseDto updateTask(Long id,TaskRequestDto taskRequestDto,Long userId);
     void DeleteById(Long id,Long userId);
     List<TaskResponseDto> searchTaskByTitle(String title,Long userId);
+    TaskResponseDto updateTaskStatus(Long id, TaskStatus status, Long userId);
 }

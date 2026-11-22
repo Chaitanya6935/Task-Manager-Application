@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -141,4 +142,80 @@ class TaskServiceImplTest {
 
         verify(taskRepository, times(1)).delete(mockTask);
     }
+
+
+
+    @Test
+    void updateTaskStatus_ToInProgress_Success() {
+
+        when(taskRepository.findByIdAndUserId(100L, 1L))
+                .thenReturn(Optional.of(mockTask));
+
+        when(taskRepository.save(any(Task.class)))
+                .thenReturn(mockTask);
+
+        TaskResponseDto response =
+                taskService.updateTaskStatus(100L, TaskStatus.IN_PROGRESS, 1L);
+
+        assertNotNull(response);
+        assertEquals(TaskStatus.IN_PROGRESS, response.getStatus());
+        assertNull(mockTask.getCompletedAt());
+
+        verify(taskRepository, times(1)).save(mockTask);
+    }
+
+    @Test
+    void updateTaskStatus_ToCompleted_SetsCompletedAt() {
+
+        mockTask.setCompletedAt(null);
+
+        when(taskRepository.findByIdAndUserId(100L, 1L))
+                .thenReturn(Optional.of(mockTask));
+
+        when(taskRepository.save(any(Task.class)))
+                .thenReturn(mockTask);
+
+        TaskResponseDto response =
+                taskService.updateTaskStatus(100L, TaskStatus.COMPLETED, 1L);
+
+        assertEquals(TaskStatus.COMPLETED, response.getStatus());
+        assertNotNull(response.getCompletedAt());
+
+        verify(taskRepository, times(1)).save(mockTask);
+    }
+
+    @Test
+    void updateTaskStatus_FromCompletedToTodo_ClearsCompletedAt() {
+
+        mockTask.setStatus(TaskStatus.COMPLETED);
+        mockTask.setCompletedAt(LocalDateTime.now());
+
+        when(taskRepository.findByIdAndUserId(100L, 1L))
+                .thenReturn(Optional.of(mockTask));
+
+        when(taskRepository.save(any(Task.class)))
+                .thenReturn(mockTask);
+
+        TaskResponseDto response =
+                taskService.updateTaskStatus(100L, TaskStatus.TODO, 1L);
+
+        assertEquals(TaskStatus.TODO, response.getStatus());
+        assertNull(response.getCompletedAt());
+
+        verify(taskRepository, times(1)).save(mockTask);
+    }
+
+    @Test
+    void updateTaskStatus_ThrowsException_WhenWrongUser() {
+
+        when(taskRepository.findByIdAndUserId(100L, 2L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                taskService.updateTaskStatus(100L, TaskStatus.COMPLETED, 2L)
+        );
+
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
 }

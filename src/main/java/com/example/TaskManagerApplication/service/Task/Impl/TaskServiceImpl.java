@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -97,11 +98,11 @@ public class TaskServiceImpl implements TaskService {
         Page<Task> tasks;
 
         if(status != null&& priority != null){
-           tasks = taskRepository.findByStatusAndPriorityAndUserId(status,priority,pageable,userId);
+           tasks = taskRepository.findByStatusAndPriorityAndUserId(status,priority,userId,pageable);
         } else if (status !=null) {
-             tasks = taskRepository.findByStatusAndUserId(status,pageable,userId);
+             tasks = taskRepository.findByStatusAndUserId(status,userId,pageable);
         } else if (priority!=null) {
-           tasks =taskRepository.findByPriorityAndUserId(priority,pageable,userId);
+           tasks =taskRepository.findByPriorityAndUserId(priority,userId,pageable);
 
         } else {
             tasks = taskRepository.findByUserId(userId,pageable);
@@ -134,10 +135,38 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<TaskResponseDto> searchTaskByTitle(String title,Long userId) {
-        return taskRepository.findByTitleAndUserIdContainingIgnoreCase(title,userId)
+        return taskRepository.findByTitleContainingIgnoreCaseAndUserId(title,userId)
                         .stream()
                         .map(this::mapToResponseDto)
                         .toList();
 
     }
+
+
+    @Override
+    public TaskResponseDto updateTaskStatus(Long id, TaskStatus status, Long userId) {
+
+        // Find task belonging to the authenticated user
+        Task task = taskRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Task not found with id: " + id));
+
+        // Update status
+        task.setStatus(status);
+
+        // Handle completion timestamp
+        if (status == TaskStatus.COMPLETED) {
+            if (task.getCompletedAt() == null) {
+                task.setCompletedAt(LocalDateTime.now());
+            }
+        } else {
+            task.setCompletedAt(null);
+        }
+
+        // Save updated task
+        Task updatedTask = taskRepository.save(task);
+
+        return mapToResponseDto(updatedTask);
+    }
+
 }
