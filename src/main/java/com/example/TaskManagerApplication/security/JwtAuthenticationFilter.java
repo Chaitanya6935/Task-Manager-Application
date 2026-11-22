@@ -1,9 +1,11 @@
+
 package com.example.TaskManagerApplication.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,65 +22,75 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtService jwtService,
-                                   CustomUserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            CustomUserDetailsService userDetailsService) {
+
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain)
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // 1. No header or not "Bearer ..." → skip, let the chain continue unauthenticated
+        // 1. No Bearer token: continue without authentication
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 2. Extract the token (everything after "Bearer ")
         final String jwt = authHeader.substring(7);
 
         try {
-            // 3. Extract username from the token
+
+            // 2. Extract username from JWT
             final String username = jwtService.extractUsername(jwt);
 
-            // 4. Only proceed if we got a username and no auth exists yet
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // 3. Authenticate only if no authentication exists
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // 5. Load user from DB
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                // 4. Load user details
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(username);
 
-                // 6. Validate token against the loaded user
+                // 5. Validate JWT
                 if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                    // 7. Build an authentication object
+                    // 6. Create authentication token
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
-                                    null,                               // credentials — null after auth
+                                    null,
                                     userDetails.getAuthorities()
                             );
 
                     authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
                     );
 
-                    // 8. Store it in the SecurityContext — request is now authenticated
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // 7. Set authentication in SecurityContext
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authToken);
                 }
             }
+
         } catch (Exception ex) {
-            // Invalid/expired/malformed token → log and continue unauthenticated
-            // The EntryPoint will handle the 401 if the endpoint requires auth
-            logger.warn("JWT validation failed: " + ex.getMessage());
+
+            // Invalid or expired JWT
+            SecurityContextHolder.clearContext();
+
+            logger.warn("JWT authentication failed.");
         }
 
-        // 9. Always continue the chain
+        // 8. Continue filter chain
         filterChain.doFilter(request, response);
     }
 }

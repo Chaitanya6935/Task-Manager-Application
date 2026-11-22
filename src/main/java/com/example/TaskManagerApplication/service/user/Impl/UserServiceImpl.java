@@ -61,8 +61,8 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(userRegistrationRequestDto.getPassword()));
 
         User saved = userRepository.save(user);
-        logger.info("New user registered: {}", saved.getEmail());
-
+//        logger.info("New user registered: {}", saved.getEmail());
+        logger.info("New user registered successfully");
         UserRegistrationResponseDto dto = new UserRegistrationResponseDto();
         dto.setName(saved.getName());
         dto.setEmail(saved.getEmail());
@@ -95,7 +95,8 @@ public class UserServiceImpl implements UserService {
 
         String jwtToken = jwtService.generateToken(userDetails);
         // 3. Build response
-        logger.info("Successful login for user: {}", userDetails.getUsername());
+//        logger.info("Successful login for user: {}", userDetails.getUsername());
+        logger.info("User login successful");
         return new LoginResponseDto(
                 "Login successful",
 

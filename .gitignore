@@ -41,3 +41,11 @@ logs/
 # Docker Data (If using local volumes)
 # ==========================================
 mysql-data/
+
+# Secrets and local configuration
+application-secret.properties
+application-prod-local.properties
+
+# Temporary files
+*.tmp
+*.bak

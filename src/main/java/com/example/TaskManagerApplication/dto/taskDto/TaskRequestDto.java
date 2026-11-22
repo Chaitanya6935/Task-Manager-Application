@@ -14,11 +14,12 @@ import java.time.LocalDate;
 public class TaskRequestDto {
 
     @NotBlank(message = "Title is required")
+    @Size(max = 150, message = "Title must not exceed 150 characters")
     private String title;
 
     @Size(max = 1000, message = "Description too long")
     private String description;
-
+    @jakarta.validation.constraints.Positive(message = "Duration must be positive")
     private Integer duration;
 
     @NotNull(message = "Start date is required")

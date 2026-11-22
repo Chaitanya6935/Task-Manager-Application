@@ -9,8 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LoginRequestDto {
-    @NotBlank(message = "Email requird")
-    @Email(message = "Email must valid")
+    @NotBlank(message = "Email required")
+    @Email(message = "Email must be  valid")
     String email;
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")

@@ -17,13 +17,13 @@ import java.util.List;
 @Table(name = "users")   // "user" is reserved in MySQL
 public class User extends BaseEntity {
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 15)
     private String phone;
 
     @Column(nullable = false)

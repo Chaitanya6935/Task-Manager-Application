@@ -14,7 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.AuthenticatedPrincipal;
+//import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,6 +52,19 @@ public class TaskController {
             @RequestParam(defaultValue = "asc") String direction,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ){
+
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Invalid pagination parameters");
+        }
+
+        List<String> allowedSortFields = List.of(
+                "id", "title", "startDate", "dueDate",
+                "priority", "status", "createdAt"
+        );
+
+        if (!allowedSortFields.contains(sort)) {
+            throw new IllegalArgumentException("Invalid sort field");
+        }
         Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;

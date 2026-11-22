@@ -1,10 +1,11 @@
+
 package com.example.TaskManagerApplication.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -24,12 +25,11 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    // ===== 1. GENERATE TOKEN =====
-
+    // 1. Generate Token
     public String generateToken(UserDetails userDetails) {
+
         Map<String, Object> extraClaims = new HashMap<>();
 
-        // Add userId as a custom claim (used later by the filter)
         if (userDetails instanceof CustomUserDetails custom) {
             extraClaims.put("userId", custom.getUserId());
             extraClaims.put("name", custom.getUsername());
@@ -38,26 +38,34 @@ public class JwtService {
         return generateToken(extraClaims, userDetails);
     }
 
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String generateToken(
+            Map<String, Object> extraClaims,
+            UserDetails userDetails) {
+
+        long now = System.currentTimeMillis();
+
         return Jwts.builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername())          // email
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + jwtExpiration))
+                .signWith(getSigningKey())
                 .compact();
     }
 
-    // ===== 2. EXTRACT CLAIMS =====
-
+    // 2. Extract Claims
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     public Long extractUserId(String token) {
+
         Object userId = extractAllClaims(token).get("userId");
-        if (userId instanceof Integer i) return i.longValue();  // Jackson may deserialize as Integer
-        if (userId instanceof Long l) return l;
+
+        if (userId instanceof Number number) {
+            return number.longValue();
+        }
+
         return null;
     }
 
@@ -65,12 +73,17 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(
+            String token,
+            Function<Claims, T> claimsResolver) {
+
         Claims claims = extractAllClaims(token);
+
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
+
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -78,14 +91,21 @@ public class JwtService {
                 .getPayload();
     }
 
-    // ===== 3. VALIDATE TOKEN =====
+    // 3. Validate Token
+    public boolean isTokenValid(
+            String token,
+            UserDetails userDetails) {
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
         try {
+
             final String username = extractUsername(token);
-            return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+
+            return username != null
+                    && username.equals(userDetails.getUsername())
+                    && !isTokenExpired(token);
+
         } catch (Exception e) {
-            return false;   // any parsing/signature/expiry error → invalid
+            return false;
         }
     }
 
@@ -93,10 +113,11 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    // ===== 4. SIGNING KEY =====
-
+    // 4. Signing Key
     private SecretKey getSigningKey() {
+
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
